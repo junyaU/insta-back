@@ -1,0 +1,31 @@
+version: '3'
+services:
+  server:
+    container_name: insta-server
+    build:
+      context: .
+      dockerfile: ./server/Dockerfile
+    ports:
+      - 8080:8080
+    volumes:
+      - ./server:/go/src
+    tty: true
+    depends_on:
+      - db
+  db:
+    container_name: insta-db
+    build:
+      context: .
+      dockerfile: ./mysql/Dockerfile
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: insta_db
+      MYSQL_USER: junya
+      MYSQL_PASSWORD: password
+    ports:
+      - 3306:3306
+    tty: true
+    volumes:
+      - ./MySQL/mysql_init:/docker-entrypoint-initdb.d
+      - ./MySQL/mysql_data:/var/lib/mysql
+    command: mysqld --character-set-server=utf8 --collation-server=utf8_unicode_ci --skip-character-set-client-handshake
