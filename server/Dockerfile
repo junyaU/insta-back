@@ -5,7 +5,7 @@ ENV PATH $PATH:$GOPATH/bin
 
 ADD ./insta-back/server /go/src
 
-WORKDIR /go/src
+WORKDIR /go/src/instagram
 
 RUN export GO111MODULE=on &&\
     go get github.com/go-sql-driver/mysql &&\
