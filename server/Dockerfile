@@ -11,3 +11,5 @@ RUN export GO111MODULE=on &&\
     go get github.com/go-sql-driver/mysql &&\
     go get github.com/beego/bee &&\
     go get github.com/astaxie/beego
+
+CMD bee run
