@@ -32,6 +32,8 @@ func (this *LoginController) Signup() {
 			log.Println("read:", id)
 		}
 	}
+
+	this.Redirect("/posthome", 302)
 }
 
 func (this *LoginController) Login() {
