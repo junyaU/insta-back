@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"log"
+	"instagram/models"
 
 	"github.com/astaxie/beego"
 )
@@ -11,5 +11,7 @@ type MainController struct {
 }
 
 func (this *MainController) Get() {
-	log.Println("hhelo")
+	my := models.Test{Id: 1, Content: "hello"}
+	this.Data["json"] = &my
+	this.ServeJSON()
 }
