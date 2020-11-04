@@ -16,8 +16,12 @@ func main() {
 	setupDB()
 
 	sessionconf := &session.ManagerConfig{
-		CookieName: "beegosessionId",
-		Gclifetime: 3600,
+		CookieName:      "instasessionId",
+		Gclifetime:      3600,
+		EnableSetCookie: true,
+		Maxlifetime:     3600,
+		CookieLifeTime:  3600,
+		ProviderConfig:  "",
 	}
 	beego.GlobalSessions, _ = session.NewManager("memory", sessionconf)
 	go beego.GlobalSessions.GC()

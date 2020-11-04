@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"instagram/models"
+	"log"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
@@ -14,9 +15,23 @@ type PostController struct {
 func (this *PostController) GetAllPosts() {
 	o := orm.NewOrm()
 	var allPosts []models.Post
+
 	o.QueryTable(new(models.Post)).RelatedSel().All(&allPosts)
 
-	this.Data["json"] = allPosts
+	var afterPost []models.Post
+
+	for _, post := range allPosts {
+
+		m2m := o.QueryM2M(&post, "Favorite")
+
+		nums, _ := m2m.Count()
+
+		post.Favonum = nums
+
+		afterPost = append(afterPost, post)
+	}
+
+	this.Data["json"] = afterPost
 
 	this.ServeJSON()
 }
@@ -45,6 +60,13 @@ func (this *PostController) Post() {
 
 	o := orm.NewOrm()
 	o.Insert(&post)
+
+	aaa := models.Post{Id: 1}
+	o.Read(&aaa)
+
+	log.Println(aaa)
+
+	// log.Println(aaa)
 
 	this.Redirect("/posthome", 302)
 }
