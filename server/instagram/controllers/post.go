@@ -66,7 +66,5 @@ func (this *PostController) Post() {
 
 	log.Println(aaa)
 
-	// log.Println(aaa)
-
 	this.Redirect("/posthome", 302)
 }
