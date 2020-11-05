@@ -27,4 +27,5 @@ func init() {
 	beego.Router("api/post", &controllers.PostController{}, "get,post:Post")
 	beego.Router("api/getpost", &controllers.PostController{}, "get:GetAllPosts")
 	beego.Router("api/favorite", &controllers.FavoriteController{}, "post:Favorite")
+	beego.Router("api/user/?:id", &controllers.UserController{}, "get:GetUser")
 }
