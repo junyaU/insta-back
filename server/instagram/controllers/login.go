@@ -6,6 +6,7 @@ import (
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type LoginController struct {
@@ -17,12 +18,24 @@ func (this *LoginController) Signup() {
 	inputEmail := this.GetString("Email")
 	inputPassword := this.GetString("Password")
 
+	hash, er := bcrypt.GenerateFromPassword([]byte(inputPassword), 10)
+
+	if er != nil {
+		log.Println("エラーが発生しました")
+		log.Println(er)
+		return
+	}
+
+	log.Println(hash)
+	log.Println("this is")
+	aaa := string(hash)
+
 	o := orm.NewOrm()
 
 	user := models.User{
 		Name:     inputName,
 		Email:    inputEmail,
-		Password: inputPassword,
+		Password: aaa,
 	}
 
 	if _, id, err := o.ReadOrCreate(&user, "Email"); err == nil {
@@ -38,6 +51,8 @@ func (this *LoginController) Signup() {
 		this.SetSession("Email", inputEmail)
 
 		this.Redirect("/posthome", 302)
+	} else {
+		log.Println(err)
 	}
 
 	this.Redirect("/", 302)
@@ -50,13 +65,14 @@ func (this *LoginController) Login() {
 	o := orm.NewOrm()
 	user := models.User{Email: inputEmail}
 	err := o.Read(&user, "Email")
+	//ハッシュ値と平文を比較
+	passwordError := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(inputPassword))
 
 	if err == orm.ErrNoRows {
 		log.Println("そんなユーザーいないよ")
 		this.Redirect("/login", 302)
 		return
-	} else if inputPassword != user.Password {
-
+	} else if passwordError != nil {
 		log.Println("パスワードが違います")
 		this.Redirect("/login", 302)
 		return
