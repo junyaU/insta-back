@@ -64,7 +64,7 @@ func (this *LoginController) Login() {
 
 	session := this.StartSession()
 
-	userId := session.Get("UserID")
+	userId := session.Get("UserId")
 	Name := session.Get("Name")
 	Email := session.Get("Email")
 

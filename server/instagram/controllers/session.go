@@ -1,18 +1,40 @@
 package controllers
 
-// var globalSessions *session.Manager
+import (
+	"log"
 
-// func init() {
-// 	globalSessions, _ = session.NewManager("memory", `{"cookieName":"gosessionid", "enableSetCookie,omitempty": true, "gclifetime":3600, "maxLifetime": 3600, "secure": false, "sessionIDHashFunc": "sha1", "sessionIDHashKey": "", "cookieLifeTime": 3600, "providerConfig": ""}`)
-// 	go globalSessions.GC()
-// }
+	"github.com/astaxie/beego"
+)
 
-// func login(w http.ResponceWriter, r *http.Request) {
-// 	sess, _ = globalSessions.SessionStart(w, r)
-// 	defer sess.SessionRelease(w)
-// 	username := sess.Get("username")
+type SessionController struct {
+	beego.Controller
+}
 
-// 	if r.Method == "GET" {
-// 		t, _ = template.ParseFiles("login.gtpl")
-// 	}
-// }
+type SessionData struct {
+	UserId int64  `json:"userid"`
+	Name   string `json:"name"`
+	Email  string `json:"email"`
+}
+
+func (this *SessionController) GetSessionData() {
+	session := this.StartSession()
+
+	sessionUserId := session.Get("UserId")
+	sessionName := session.Get("Name")
+	sessionEmail := session.Get("Email")
+
+	if sessionUserId == nil || sessionName == nil || sessionEmail == nil {
+		log.Println("残念wwwwwws")
+		return
+	}
+
+	var data = SessionData{}
+
+	data.UserId = sessionUserId.(int64)
+	data.Name = sessionName.(string)
+	data.Email = sessionEmail.(string)
+
+	this.Data["json"] = data
+
+	this.ServeJSON()
+}
