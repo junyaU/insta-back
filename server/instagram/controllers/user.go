@@ -1,11 +1,19 @@
 package controllers
 
 import (
+	"encoding/base64"
 	"instagram/models"
+	"io/ioutil"
+	"log"
+	"os"
+
 	"strconv"
+
+	"context"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
+	"github.com/minio/minio-go/v7"
 )
 
 type UserController struct {
@@ -26,13 +34,34 @@ func (this *UserController) GetUser() {
 	o.LoadRelated(&user, "Posts")
 
 	var arr []int64
-
-	//それぞれの投稿のいいね数を取得
 	if user.Posts != nil {
+		//それぞれの投稿のいいね数を取得
 		for _, post := range user.Posts {
 			m2m := o.QueryM2M(post, "Favorite")
 			num, _ := m2m.Count()
 			post.Favonum = int64(num)
+
+			imageName := post.Image
+			imagePath := "./static/" + imageName
+
+			//ローカルに画像を持ってくる
+			minioClient.FGetObject(context.Background(), bucketName, imageName, imagePath, minio.GetObjectOptions{})
+
+			file, err := os.Open(imagePath)
+
+			if err != nil {
+				log.Println("正常に処理されませんでした")
+				log.Println(err)
+				return
+			}
+
+			defer file.Close()
+
+			fileData, _ := ioutil.ReadAll(file)
+			encData := base64.StdEncoding.EncodeToString(fileData)
+			post.Image = encData
+
+			os.Remove(imagePath)
 
 			arr = append(arr, num)
 		}
