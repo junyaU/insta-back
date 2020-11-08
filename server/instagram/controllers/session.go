@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	"log"
-
 	"github.com/astaxie/beego"
 )
 
@@ -24,7 +22,6 @@ func (this *SessionController) GetSessionData() {
 	sessionEmail := session.Get("Email")
 
 	if sessionUserId == nil || sessionName == nil || sessionEmail == nil {
-		log.Println("残念wwwwwws")
 		return
 	}
 
