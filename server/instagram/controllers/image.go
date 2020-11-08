@@ -23,7 +23,7 @@ type ImageData struct {
 	Image string `json:"image"`
 }
 
-//処理の仕方が冗長なので要修正！
+//コードが冗長なので要修正！
 
 //minioのインスタンス生成
 var endpoint = "instagram_minio_1:9000"
@@ -52,7 +52,6 @@ func (this *ImageController) UploadImage() {
 		uploadInfo, er := minioClient.FPutObject(context.Background(), bucketName, header.Filename, filePath, minio.PutObjectOptions{})
 
 		if er != nil {
-			log.Println("#####")
 			log.Println(er)
 			return
 		}
@@ -75,6 +74,7 @@ func (this *ImageController) UploadImage() {
 		//ローカル画像を削除
 		os.Remove(filePath)
 
+		this.Redirect("/posthome", 302)
 	}
 }
 

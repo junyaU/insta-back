@@ -101,5 +101,17 @@ func (this *LoginController) Login() {
 }
 
 func (this *LoginController) Logout() {
+	session := this.StartSession()
 
+	userId := session.Get("UserId")
+	name := session.Get("Name")
+	email := session.Get("Email")
+
+	if userId != nil || name != nil || email != nil {
+		session.Delete("UserId")
+		session.Delete("Name")
+		session.Delete("Email")
+	}
+
+	this.Redirect("/", 302)
 }
