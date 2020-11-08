@@ -44,7 +44,7 @@ func (this *ImageController) UploadImage() {
 	defer file.Close()
 
 	//一旦ローカルに保存
-	this.SaveToFile("Image", "./static/"+header.Filename)
+	this.SaveToFile("Image", filePath)
 
 	if err == nil {
 

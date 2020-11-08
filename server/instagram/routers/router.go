@@ -28,7 +28,6 @@ func init() {
 	beego.Router("api/getpost", &controllers.PostController{}, "get:GetAllPosts")
 	beego.Router("api/favorite", &controllers.FavoriteController{}, "post:Favorite")
 	beego.Router("api/user/?:id", &controllers.UserController{}, "get:GetUser")
-	beego.Router("api/try", &controllers.PostController{}, "get:Try")
 	beego.Router("api/getsession", &controllers.SessionController{}, "get:GetSessionData")
 	beego.Router("api/upload", &controllers.ImageController{}, "post:UploadImage")
 	beego.Router("api/getprofileimage/?:id", &controllers.ImageController{}, "get:GetProfileImage")
