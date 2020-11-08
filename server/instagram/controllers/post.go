@@ -1,11 +1,13 @@
 package controllers
 
 import (
+	"context"
 	"instagram/models"
 	"log"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
+	"github.com/minio/minio-go/v7"
 )
 
 type PostController struct {
@@ -16,7 +18,7 @@ func (this *PostController) GetAllPosts() {
 	o := orm.NewOrm()
 	var allPosts []models.Post
 
-	o.QueryTable(new(models.Post)).RelatedSel().All(&allPosts)
+	o.QueryTable(new(models.Post)).RelatedSel("User").All(&allPosts)
 
 	var afterPost []models.Post
 
