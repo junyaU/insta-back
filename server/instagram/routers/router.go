@@ -20,7 +20,6 @@ func init() {
 	// 	),
 	// )
 	// beego.AddNamespace(ns)
-	beego.Router("/api/test", &controllers.MainController{})
 	beego.Router("/api/login", &controllers.LoginController{}, "get,post:Login")
 	beego.Router("api/logout", &controllers.LoginController{}, "get:Logout")
 	beego.Router("api/signup", &controllers.LoginController{}, "get,post:Signup")
@@ -31,4 +30,5 @@ func init() {
 	beego.Router("api/getsession", &controllers.SessionController{}, "get:GetSessionData")
 	beego.Router("api/upload", &controllers.ImageController{}, "post:UploadImage")
 	beego.Router("api/getprofileimage/?:id", &controllers.ImageController{}, "get:GetProfileImage")
+	beego.Router("api/getfavoriteuser/?:id", &controllers.FavoriteController{}, "get:GetFavoriteUser")
 }

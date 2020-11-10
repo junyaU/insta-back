@@ -27,6 +27,7 @@ func (this *PostController) GetAllPosts() {
 
 	for _, post := range allPosts {
 		//お気に入りの処理
+		o.LoadRelated(&post, "Favorite")
 		m2m := o.QueryM2M(&post, "Favorite")
 		nums, _ := m2m.Count()
 		post.Favonum = nums

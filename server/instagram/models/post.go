@@ -7,7 +7,7 @@ import (
 type Post struct {
 	Id       int64     `orm:"auto"`
 	User     *User     `orm:"rel(fk)"`
-	Favorite []*User   `orm:"rel(m2m)"`
+	Favorite []*User   `orm:"reverse(many)"`
 	Comment  string    `orm:"size(100)" form:"Comment" valid:"Required;MaxSize(100)"`
 	Image    string    `orm:"size(50)" form:"Image" valid:"Required"`
 	Favonum  int64     `orm:"-"`

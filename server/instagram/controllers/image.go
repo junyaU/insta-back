@@ -78,6 +78,7 @@ func (this *ImageController) UploadImage() {
 	}
 }
 
+//個人のマイページの画像取得
 func (this *ImageController) GetProfileImage() {
 	o := orm.NewOrm()
 
@@ -122,5 +123,4 @@ func (this *ImageController) GetProfileImage() {
 	this.Data["json"] = sendData
 
 	this.ServeJSON()
-
 }
