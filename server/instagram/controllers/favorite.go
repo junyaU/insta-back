@@ -3,6 +3,7 @@ package controllers
 import (
 	"instagram/models"
 	"log"
+	"strconv"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
@@ -45,4 +46,19 @@ func (this *FavoriteController) Favorite() {
 		log.Println(num)
 		log.Println("だよ")
 	}
+}
+
+func (this *FavoriteController) GetFavoriteUser() {
+	inputId := this.Ctx.Input.Param(":id")
+	postId, _ := strconv.ParseInt(inputId, 10, 64)
+	post := models.Post{Id: postId}
+
+	o := orm.NewOrm()
+	o.Read(&post)
+	o.LoadRelated(&post, "Favorite")
+
+	this.Data["json"] = post
+
+	this.ServeJSON()
+
 }
