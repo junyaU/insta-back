@@ -65,17 +65,22 @@ func (this *PostController) GetAllPosts() {
 }
 
 func (this *PostController) Post() {
+	//ログインチェック
 	session := this.StartSession()
 	userId := session.Get("UserId")
-	Name := session.Get("Name")
-	Email := session.Get("Email")
-
-	if userId == nil || Name == nil || Email == nil {
+	if userId == nil {
 		this.Redirect("/", 302)
 		return
 	}
+	sessionUser := models.User{Id: userId.(int64)}
+	o := orm.NewOrm()
+	o.Read(&sessionUser)
 
-	id := userId.(int64)
+	sessionId := session.SessionID()
+	if sessionUser.SessionId != sessionId {
+		this.Redirect("/", 302)
+		return
+	}
 
 	inputComment := this.GetString("Comment")
 	file, header, err := this.GetFile("Image")
@@ -106,11 +111,10 @@ func (this *PostController) Post() {
 
 	post := models.Post{
 		Comment: inputComment,
-		User:    &models.User{Id: id},
+		User:    &models.User{Id: userId.(int64)},
 		Image:   header.Filename,
 	}
 
-	o := orm.NewOrm()
 	o.Insert(&post)
 
 	this.Redirect("/posthome", 302)

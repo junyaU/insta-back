@@ -18,16 +18,8 @@ func (this *LoginController) Signup() {
 	inputEmail := this.GetString("Email")
 	inputPassword := this.GetString("Password")
 
-	hash, er := bcrypt.GenerateFromPassword([]byte(inputPassword), 10)
+	hash, _ := bcrypt.GenerateFromPassword([]byte(inputPassword), 10)
 
-	if er != nil {
-		log.Println("エラーが発生しました")
-		log.Println(er)
-		return
-	}
-
-	log.Println(hash)
-	log.Println("this is")
 	aaa := string(hash)
 
 	o := orm.NewOrm()
@@ -50,11 +42,12 @@ func (this *LoginController) Signup() {
 		this.SetSession("Name", inputName)
 		this.SetSession("Email", inputEmail)
 
-		this.Redirect("/posthome", 302)
-	} else {
-		log.Println(err)
-	}
+		sessionId := session.SessionID()
+		user.SessionId = sessionId
+		o.Update(&user, "SessionId")
 
+		this.Redirect("/posthome", 302)
+	}
 	this.Redirect("/", 302)
 }
 
@@ -93,9 +86,10 @@ func (this *LoginController) Login() {
 	this.SetSession("Name", user.Name)
 	this.SetSession("Email", user.Email)
 
-	log.Println(inputEmail)
-	log.Println(inputPassword)
-	log.Println(user.Name)
+	//セッションIDをDBに保存しておく
+	sessionId := session.SessionID()
+	user.SessionId = sessionId
+	o.Update(&user, "SessionId")
 
 	this.Redirect("/postform", 302)
 }
