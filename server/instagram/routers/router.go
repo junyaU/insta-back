@@ -14,21 +14,19 @@ import (
 )
 
 func init() {
-	// ns := beego.NewNamespace("/api",
-	// 	beego.NSInclude(
-	// 		&controllers.MainController{"get"},
-	// 	),
-	// )
-	// beego.AddNamespace(ns)
-	beego.Router("/api/login", &controllers.LoginController{}, "get,post:Login")
-	beego.Router("api/logout", &controllers.LoginController{}, "get:Logout")
-	beego.Router("api/signup", &controllers.LoginController{}, "get,post:Signup")
-	beego.Router("api/post", &controllers.PostController{}, "get,post:Post")
-	beego.Router("api/getpost", &controllers.PostController{}, "get:GetAllPosts")
-	beego.Router("api/favorite", &controllers.FavoriteController{}, "post:Favorite")
-	beego.Router("api/user/?:id", &controllers.UserController{}, "get:GetUser")
-	beego.Router("api/getsession", &controllers.SessionController{}, "get:GetSessionData")
-	beego.Router("api/upload", &controllers.ImageController{}, "post:UploadImage")
-	beego.Router("api/getprofileimage/?:id", &controllers.ImageController{}, "get:GetProfileImage")
-	beego.Router("api/getfavoriteuser/?:id", &controllers.FavoriteController{}, "get:GetFavoriteUser")
+	ns := beego.NewNamespace("/api",
+		beego.NSRouter("/login", &controllers.LoginController{}, "post:Login"),
+		beego.NSRouter("/logout", &controllers.LoginController{}, "get:Logout"),
+		beego.NSRouter("/signup", &controllers.LoginController{}, "get,post:Signup"),
+		beego.NSRouter("/post", &controllers.PostController{}, "get,post:Post"),
+		beego.NSRouter("/getpost", &controllers.PostController{}, "get:GetAllPosts"),
+		beego.NSRouter("/favorite", &controllers.FavoriteController{}, "post:Favorite"),
+		beego.NSRouter("/user/?:id", &controllers.UserController{}, "get:GetUser"),
+		beego.NSRouter("/getsession", &controllers.SessionController{}, "get:GetSessionData"),
+		beego.NSRouter("/upload", &controllers.ImageController{}, "post:UploadImage"),
+		beego.NSRouter("/getprofileimage/?:id", &controllers.ImageController{}, "get:GetProfileImage"),
+		beego.NSRouter("/getfavoriteuser/?:id", &controllers.FavoriteController{}, "get:GetFavoriteUser"),
+	)
+
+	beego.AddNamespace(ns)
 }

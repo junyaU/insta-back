@@ -1,16 +1,17 @@
 package controllers
 
 import (
-	"context"
 	"encoding/base64"
 	"instagram/models"
 	"io/ioutil"
-	"log"
 	"os"
+	"regexp"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
-	"github.com/minio/minio-go/v7"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
 type PostController struct {
@@ -33,17 +34,17 @@ func (this *PostController) GetAllPosts() {
 		post.Favonum = nums
 
 		imageName := post.Image
-		imagePath := "./static/" + imageName
 
-		minioClient.FGetObject(context.Background(), bucketName, imageName, imagePath, minio.GetObjectOptions{})
+		downloader := s3manager.NewDownloader(sess)
 
-		file, err := os.Open(imagePath)
+		file, _ := os.Create(imageName)
 
-		if err != nil {
-			log.Println("正常に処理されませんでした")
-			log.Println(err)
-			return
-		}
+		downloader.Download(file,
+			&s3.GetObjectInput{
+				Bucket: aws.String(bucketName),
+				Key:    aws.String(imageName),
+			},
+		)
 
 		defer file.Close()
 
@@ -51,9 +52,9 @@ func (this *PostController) GetAllPosts() {
 
 		encData := base64.StdEncoding.EncodeToString(fileData)
 
-		os.Remove(imagePath)
-
 		post.Image = encData
+
+		os.Remove(imageName)
 
 		afterPost = append(afterPost, post)
 
@@ -83,28 +84,29 @@ func (this *PostController) Post() {
 	}
 
 	inputComment := this.GetString("Comment")
-	file, header, err := this.GetFile("Image")
+	file, header, _ := this.GetFile("Image")
 
-	defer file.Close()
-
-	if err != nil {
-		log.Println("画像が正しくアップロードできませんでした。")
-		log.Println(err)
+	validation := regexp.MustCompile(".png")
+	if !validation.MatchString(header.Filename) {
+		this.Redirect("/postform", 302)
 		return
 	}
+
+	defer file.Close()
 
 	filePath := "./static/" + header.Filename
 
 	//一旦ローカルに画像を取り出す
 	this.SaveToFile("Image", filePath)
 
-	//ローカルからminio
-	_, er := minioClient.FPutObject(context.Background(), bucketName, header.Filename, filePath, minio.PutObjectOptions{})
+	openFile, _ := os.Open(filePath)
 
-	if er != nil {
-		log.Println("正しく処理されませんでした")
-		return
-	}
+	uploader := s3manager.NewUploader(sess)
+	uploader.Upload(&s3manager.UploadInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(header.Filename),
+		Body:   openFile,
+	})
 
 	//ローカル画像の削除
 	os.Remove(filePath)

@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"instagram/models"
-	"log"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
@@ -20,14 +19,14 @@ func (this *LoginController) Signup() {
 
 	hash, _ := bcrypt.GenerateFromPassword([]byte(inputPassword), 10)
 
-	aaa := string(hash)
+	hashPassword := string(hash)
 
 	o := orm.NewOrm()
 
 	user := models.User{
 		Name:     inputName,
 		Email:    inputEmail,
-		Password: aaa,
+		Password: hashPassword,
 	}
 
 	if _, id, err := o.ReadOrCreate(&user, "Email"); err == nil {
@@ -40,7 +39,6 @@ func (this *LoginController) Signup() {
 
 		this.SetSession("UserId", id)
 		this.SetSession("Name", inputName)
-		this.SetSession("Email", inputEmail)
 
 		sessionId := session.SessionID()
 		user.SessionId = sessionId
@@ -61,12 +59,7 @@ func (this *LoginController) Login() {
 	//ハッシュ値と平文を比較
 	passwordError := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(inputPassword))
 
-	if err == orm.ErrNoRows {
-		log.Println("そんなユーザーいないよ")
-		this.Redirect("/login", 302)
-		return
-	} else if passwordError != nil {
-		log.Println("パスワードが違います")
+	if err == orm.ErrNoRows || passwordError != nil {
 		this.Redirect("/login", 302)
 		return
 	}
@@ -75,16 +68,14 @@ func (this *LoginController) Login() {
 
 	userId := session.Get("UserId")
 	Name := session.Get("Name")
-	Email := session.Get("Email")
 
-	if userId != nil || Name != nil || Email != nil {
+	if userId != nil || Name != nil {
 		this.Redirect("/posthome", 302)
 		return
 	}
 
 	this.SetSession("UserId", user.Id)
 	this.SetSession("Name", user.Name)
-	this.SetSession("Email", user.Email)
 
 	//セッションIDをDBに保存しておく
 	sessionId := session.SessionID()
@@ -99,12 +90,10 @@ func (this *LoginController) Logout() {
 
 	userId := session.Get("UserId")
 	name := session.Get("Name")
-	email := session.Get("Email")
 
-	if userId != nil || name != nil || email != nil {
+	if userId != nil || name != nil {
 		session.Delete("UserId")
 		session.Delete("Name")
-		session.Delete("Email")
 	}
 
 	this.Redirect("/", 302)

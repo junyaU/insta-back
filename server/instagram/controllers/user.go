@@ -4,16 +4,14 @@ import (
 	"encoding/base64"
 	"instagram/models"
 	"io/ioutil"
-	"log"
 	"os"
-
 	"strconv"
-
-	"context"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
-	"github.com/minio/minio-go/v7"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
 type UserController struct {
@@ -42,26 +40,23 @@ func (this *UserController) GetUser() {
 			post.Favonum = int64(num)
 
 			imageName := post.Image
-			imagePath := "./static/" + imageName
 
-			//ローカルに画像を持ってくる
-			minioClient.FGetObject(context.Background(), bucketName, imageName, imagePath, minio.GetObjectOptions{})
-
-			file, err := os.Open(imagePath)
-
-			if err != nil {
-				log.Println("正常に処理されませんでした")
-				log.Println(err)
-				return
-			}
-
+			file, _ := os.Create(imageName)
 			defer file.Close()
+
+			downloader := s3manager.NewDownloader(sess)
+			downloader.Download(file,
+				&s3.GetObjectInput{
+					Bucket: aws.String(bucketName),
+					Key:    aws.String(imageName),
+				},
+			)
 
 			fileData, _ := ioutil.ReadAll(file)
 			encData := base64.StdEncoding.EncodeToString(fileData)
 			post.Image = encData
 
-			os.Remove(imagePath)
+			os.Remove(imageName)
 
 			arr = append(arr, num)
 		}
