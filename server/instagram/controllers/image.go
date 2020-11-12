@@ -1,18 +1,20 @@
 package controllers
 
 import (
-	"context"
 	"encoding/base64"
 	"instagram/models"
 	"io/ioutil"
-	"log"
 	"os"
+	"regexp"
 	"strconv"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
 type ImageController struct {
@@ -23,59 +25,53 @@ type ImageData struct {
 	Image string `json:"image"`
 }
 
-//コードが冗長なので要修正！
-
-//minioのインスタンス生成
-var endpoint = "instagram_minio_1:9000"
-var accessKey = "AKIA_MINIO_ACCESS_KEY"
-var secretKey = "minio_secret_key"
-var http = false
-var bucketName = "mybucket"
-var minioClient, _ = minio.New(endpoint, &minio.Options{
-	Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
-	Secure: http,
-})
+var creds = credentials.NewStaticCredentials(beego.AppConfig.String("s3AccessKey"), beego.AppConfig.String("s3SecretKey"), "")
+var sess = session.Must(session.NewSession(&aws.Config{
+	Credentials: creds,
+	Region:      aws.String("ap-northeast-1"),
+}))
+var svc = s3.New(sess)
+var bucketName = beego.AppConfig.String("bucketName")
 
 func (this *ImageController) UploadImage() {
-	file, header, err := this.GetFile("Image")
+	file, header, _ := this.GetFile("Image")
 	inputId, _ := this.GetInt64("userId")
 	filePath := "./static/" + header.Filename
 
+	validation := regexp.MustCompile(".png")
+	if !validation.MatchString(header.Filename) {
+		this.Redirect("/posthome", 302)
+		return
+	}
 	defer file.Close()
 
-	//一旦ローカルに保存
+	//一旦ローカルに画像を取り出す
 	this.SaveToFile("Image", filePath)
 
-	if err == nil {
+	openFile, _ := os.Open(filePath)
 
-		//ローカルから画像を取り出してminioに保存
-		uploadInfo, er := minioClient.FPutObject(context.Background(), bucketName, header.Filename, filePath, minio.PutObjectOptions{})
+	uploader := s3manager.NewUploader(sess)
+	uploader.Upload(&s3manager.UploadInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(header.Filename),
+		Body:   openFile,
+	})
 
-		if er != nil {
-			log.Println(er)
-			return
-		}
+	o := orm.NewOrm()
+	imageModel := models.Imageprofile{Image: header.Filename}
+	uploadUser := models.User{Id: inputId}
 
-		log.Println("success")
-		log.Println(uploadInfo)
+	o.Insert(&imageModel)
 
-		o := orm.NewOrm()
-		imageModel := models.Imageprofile{Image: header.Filename}
-		uploadUser := models.User{Id: inputId}
+	o.Read(&imageModel)
+	o.Read(&uploadUser)
 
-		o.Insert(&imageModel)
+	uploadUser.Imageprofile = &imageModel
+	o.Update(&uploadUser, "Imageprofile")
 
-		o.Read(&imageModel)
-		o.Read(&uploadUser)
+	os.Remove(filePath)
 
-		uploadUser.Imageprofile = &imageModel
-		o.Update(&uploadUser, "Imageprofile")
-
-		//ローカル画像を削除
-		os.Remove(filePath)
-
-		this.Redirect("/posthome", 302)
-	}
+	this.Redirect("/posthome", 302)
 }
 
 //個人のマイページの画像取得
@@ -96,16 +92,16 @@ func (this *ImageController) GetProfileImage() {
 	}
 	o.Read(user.Imageprofile)
 	filename := user.Imageprofile.Image
-	filePath := "./static/" + filename
 
-	//minioからローカルに呼び出す
-	minioClient.FGetObject(context.Background(), bucketName, filename, filePath, minio.GetObjectOptions{})
+	file, _ := os.Create(filename)
 
-	file, err := os.Open(filePath)
-
-	if err != nil {
-		return
-	}
+	downloader := s3manager.NewDownloader(sess)
+	downloader.Download(file,
+		&s3.GetObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    aws.String(filename),
+		},
+	)
 
 	defer file.Close()
 
@@ -113,12 +109,11 @@ func (this *ImageController) GetProfileImage() {
 
 	enc := base64.StdEncoding.EncodeToString(fileData)
 
-	//ローカル画像の削除
-	os.Remove(filePath)
-
 	var sendData = ImageData{}
 
 	sendData.Image = enc
+
+	os.Remove(filename)
 
 	this.Data["json"] = sendData
 

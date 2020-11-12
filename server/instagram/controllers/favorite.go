@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"instagram/models"
-	"log"
 	"strconv"
 
 	"github.com/astaxie/beego"
@@ -17,11 +16,9 @@ func (this *FavoriteController) Favorite() {
 	session := this.StartSession()
 	sessionUserId := session.Get("UserId")
 	name := session.Get("Name")
-	email := session.Get("Email")
 
-	if sessionUserId == nil || name == nil || email == nil {
+	if sessionUserId == nil || name == nil {
 		this.Redirect("/", 302)
-		log.Println("戻ります！")
 		return
 	}
 
@@ -37,15 +34,7 @@ func (this *FavoriteController) Favorite() {
 
 	o.Read(&user)
 
-	num, err := m2m.Add(user)
-
-	if err != nil {
-		log.Println(err)
-		log.Println("失敗だよ！")
-	} else {
-		log.Println(num)
-		log.Println("だよ")
-	}
+	m2m.Add(user)
 }
 
 func (this *FavoriteController) GetFavoriteUser() {

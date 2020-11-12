@@ -20,7 +20,6 @@ type SessionData struct {
 func (this *SessionController) GetSessionData() {
 	session := this.StartSession()
 	sessionUserId := session.Get("UserId")
-
 	if sessionUserId == nil {
 		return
 	}
@@ -28,9 +27,14 @@ func (this *SessionController) GetSessionData() {
 	o := orm.NewOrm()
 	sessionUser := models.User{Id: sessionUserId.(int64)}
 	o.Read(&sessionUser)
+	sessionId := session.SessionID()
+	//DBに保存された値とsessionIdが一致しなければリターン
+	if sessionId != sessionUser.SessionId {
+		return
+	}
+
 	o.LoadRelated(&sessionUser, "FavoritePosts")
 
 	this.Data["json"] = sessionUser
-
 	this.ServeJSON()
 }

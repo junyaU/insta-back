@@ -10,7 +10,6 @@ type User struct {
 	Email          string        `orm:"size(64)" form:"Email" valid:"Required;Email"`
 	Password       string        `orm:"size(250)" valid:"Required;MinSize(6)"`
 	Imageprofile   *Imageprofile `orm:"null;rel(one);on_delete(set_null)"`
-	Repassword     string        `orm:"-" form:"Repassword" valid:"Required"`
 	TotalFavorited int64         `orm:"-"`
 	SessionId      string        `orm:"size(100);null"`
 	Posts          []*Post       `orm:"reverse(many)"`
