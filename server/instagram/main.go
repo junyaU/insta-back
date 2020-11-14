@@ -7,15 +7,33 @@ import (
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
+	"github.com/astaxie/beego/plugins/cors"
+	"github.com/astaxie/beego/session"
 	_ "github.com/go-sql-driver/mysql"
 )
 
 func main() {
 	setupDB()
-	if beego.BConfig.RunMode == "dev" {
-		beego.BConfig.WebConfig.DirectoryIndex = true
-		beego.BConfig.WebConfig.StaticDir["/swagger"] = "swagger"
+
+	sessionconf := &session.ManagerConfig{
+		CookieName:      "instasessionId",
+		Gclifetime:      3600,
+		EnableSetCookie: true,
+		Maxlifetime:     3600,
+		CookieLifeTime:  3600,
+		ProviderConfig:  "",
 	}
+	beego.GlobalSessions, _ = session.NewManager("memory", sessionconf)
+	go beego.GlobalSessions.GC()
+
+	beego.InsertFilter("*", beego.BeforeRouter, cors.Allow(&cors.Options{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"*"},
+		AllowHeaders:     []string{"Origin"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
+
 	beego.Run()
 }
 
@@ -24,12 +42,11 @@ func setupDB() {
 
 	orm.RegisterDriver(db, orm.DRMySQL)
 	orm.RegisterDataBase("default", db, beego.AppConfig.String("sqlconn")+"?charset=utf8")
-	err := orm.RunSyncdb("default", false, false)
+	orm.RegisterModel(
+		new(models.User), new(models.Post), new(models.Imageprofile),
+	)
+	err := orm.RunSyncdb("default", false, true)
 	if err != nil {
 		fmt.Println(err)
 	}
-}
-
-func init() {
-	orm.RegisterModel(new(models.Test))
 }

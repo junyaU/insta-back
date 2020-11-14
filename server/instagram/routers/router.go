@@ -14,11 +14,19 @@ import (
 )
 
 func init() {
-	// ns := beego.NewNamespace("/api",
-	// 	beego.NSInclude(
-	// 		&controllers.MainController{"get"},
-	// 	),
-	// )
-	// beego.AddNamespace(ns)
-	beego.Router("/api/test", &controllers.MainController{})
+	ns := beego.NewNamespace("/api",
+		beego.NSRouter("/login", &controllers.LoginController{}, "post:Login"),
+		beego.NSRouter("/logout", &controllers.LoginController{}, "get:Logout"),
+		beego.NSRouter("/signup", &controllers.LoginController{}, "get,post:Signup"),
+		beego.NSRouter("/post", &controllers.PostController{}, "get,post:Post"),
+		beego.NSRouter("/getpost", &controllers.PostController{}, "get:GetAllPosts"),
+		beego.NSRouter("/favorite", &controllers.FavoriteController{}, "post:Favorite"),
+		beego.NSRouter("/user/?:id", &controllers.UserController{}, "get:GetUser"),
+		beego.NSRouter("/getsession", &controllers.SessionController{}, "get:GetSessionData"),
+		beego.NSRouter("/upload", &controllers.ImageController{}, "post:UploadImage"),
+		beego.NSRouter("/getprofileimage/?:id", &controllers.ImageController{}, "get:GetProfileImage"),
+		beego.NSRouter("/getfavoriteuser/?:id", &controllers.FavoriteController{}, "get:GetFavoriteUser"),
+	)
+
+	beego.AddNamespace(ns)
 }
