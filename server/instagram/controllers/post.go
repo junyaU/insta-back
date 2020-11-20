@@ -22,7 +22,7 @@ func (this *PostController) GetAllPosts() {
 	o := orm.NewOrm()
 	var allPosts []models.Post
 
-	o.QueryTable(new(models.Post)).RelatedSel("User").All(&allPosts)
+	o.QueryTable(new(models.Post)).RelatedSel("User").OrderBy("-Created").All(&allPosts)
 
 	var afterPost []models.Post
 
