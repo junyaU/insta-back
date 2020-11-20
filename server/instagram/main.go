@@ -16,7 +16,7 @@ func main() {
 	setupDB()
 
 	sessionconf := &session.ManagerConfig{
-		CookieName:      "instasessionId",
+		CookieName:      "instaSessionID",
 		Gclifetime:      3600,
 		EnableSetCookie: true,
 		Maxlifetime:     3600,
@@ -28,9 +28,9 @@ func main() {
 
 	beego.InsertFilter("*", beego.BeforeRouter, cors.Allow(&cors.Options{
 		AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{"*"},
-		AllowHeaders:     []string{"Origin"},
-		ExposeHeaders:    []string{"Content-Length"},
+		AllowMethods:     []string{"GET", "DELETE", "PUT", "PATCH", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Access-Control-Allow-Origin"},
+		ExposeHeaders:    []string{"Content-Length", "Access-Control-Allow-Origin"},
 		AllowCredentials: true,
 	}))
 

@@ -18,7 +18,7 @@ func (this *FavoriteController) Favorite() {
 	name := session.Get("Name")
 
 	if sessionUserId == nil || name == nil {
-		this.Redirect("/", 302)
+		this.Redirect(beego.AppConfig.String("apiUrl"), 302)
 		return
 	}
 
