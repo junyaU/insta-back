@@ -42,9 +42,12 @@ func (this *LoginController) Signup() {
 
 		sessionId := session.SessionID()
 		user.SessionId = sessionId
+
+		this.Ctx.SetCookie("instaSessionID", sessionId)
 		o.Update(&user, "SessionId")
 
 		this.Redirect(beego.AppConfig.String("apiUrl")+"/posthome", 302)
+		return
 	}
 	this.Redirect(beego.AppConfig.String("apiUrl"), 302)
 }
@@ -81,6 +84,7 @@ func (this *LoginController) Login() {
 	sessionId := session.SessionID()
 	user.SessionId = sessionId
 	o.Update(&user, "SessionId")
+	this.Ctx.SetCookie("instaSessionID", sessionId)
 
 	this.Redirect(beego.AppConfig.String("apiUrl")+"/postform", 302)
 }
@@ -96,5 +100,5 @@ func (this *LoginController) Logout() {
 		session.Delete("Name")
 	}
 
-	this.Redirect("/", 302)
+	this.Redirect(beego.AppConfig.String("apiUrl"), 302)
 }
