@@ -20,6 +20,7 @@ func main() {
 		Gclifetime:      3600,
 		EnableSetCookie: true,
 		Maxlifetime:     3600,
+		Secure:          true,
 		CookieLifeTime:  3600,
 		ProviderConfig:  "",
 	}
@@ -27,7 +28,7 @@ func main() {
 	go beego.GlobalSessions.GC()
 
 	beego.InsertFilter("*", beego.BeforeRouter, cors.Allow(&cors.Options{
-		AllowOrigins:     []string{"*"},
+		AllowOrigins:     []string{beego.AppConfig.String("apiUrl")},
 		AllowMethods:     []string{"GET", "DELETE", "PUT", "PATCH", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Access-Control-Allow-Origin"},
 		ExposeHeaders:    []string{"Content-Length", "Access-Control-Allow-Origin"},
