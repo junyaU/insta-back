@@ -40,7 +40,7 @@ func (this *ImageController) UploadImage() {
 
 	validation := regexp.MustCompile(".png")
 	if !validation.MatchString(header.Filename) {
-		this.Redirect("/posthome", 302)
+		this.Redirect(beego.AppConfig.String("apiUrl")+"/posthome", 302)
 		return
 	}
 	defer file.Close()
@@ -71,7 +71,7 @@ func (this *ImageController) UploadImage() {
 
 	os.Remove(filePath)
 
-	this.Redirect("/posthome", 302)
+	this.Redirect(beego.AppConfig.String("apiUrl")+"/posthome", 302)
 }
 
 //個人のマイページの画像取得
