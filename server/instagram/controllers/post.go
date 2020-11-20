@@ -70,7 +70,7 @@ func (this *PostController) Post() {
 	session := this.StartSession()
 	userId := session.Get("UserId")
 	if userId == nil {
-		this.Redirect("/", 302)
+		this.Redirect(beego.AppConfig.String("apiUrl"), 302)
 		return
 	}
 	sessionUser := models.User{Id: userId.(int64)}
@@ -79,7 +79,7 @@ func (this *PostController) Post() {
 
 	sessionId := session.SessionID()
 	if sessionUser.SessionId != sessionId {
-		this.Redirect("/", 302)
+		this.Redirect(beego.AppConfig.String("apiUrl"), 302)
 		return
 	}
 
@@ -88,7 +88,7 @@ func (this *PostController) Post() {
 
 	validation := regexp.MustCompile(".png")
 	if !validation.MatchString(header.Filename) {
-		this.Redirect("/postform", 302)
+		this.Redirect(beego.AppConfig.String("apiUrl")+"/postform", 302)
 		return
 	}
 
@@ -119,5 +119,5 @@ func (this *PostController) Post() {
 
 	o.Insert(&post)
 
-	this.Redirect("/posthome", 302)
+	this.Redirect(beego.AppConfig.String("apiUrl")+"/posthome", 302)
 }

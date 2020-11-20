@@ -34,7 +34,7 @@ func (this *LoginController) Signup() {
 		userId := session.Get("UserId")
 
 		if userId != nil {
-			this.Redirect("/", 302)
+			this.Redirect(beego.AppConfig.String("apiUrl"), 302)
 		}
 
 		this.SetSession("UserId", id)
@@ -44,9 +44,9 @@ func (this *LoginController) Signup() {
 		user.SessionId = sessionId
 		o.Update(&user, "SessionId")
 
-		this.Redirect("/posthome", 302)
+		this.Redirect(beego.AppConfig.String("apiUrl")+"/posthome", 302)
 	}
-	this.Redirect("/", 302)
+	this.Redirect(beego.AppConfig.String("apiUrl"), 302)
 }
 
 func (this *LoginController) Login() {
@@ -60,7 +60,7 @@ func (this *LoginController) Login() {
 	passwordError := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(inputPassword))
 
 	if err == orm.ErrNoRows || passwordError != nil {
-		this.Redirect("/login", 302)
+		this.Redirect(beego.AppConfig.String("apiUrl")+"/login", 302)
 		return
 	}
 
@@ -70,7 +70,7 @@ func (this *LoginController) Login() {
 	Name := session.Get("Name")
 
 	if userId != nil || Name != nil {
-		this.Redirect("/posthome", 302)
+		this.Redirect(beego.AppConfig.String("apiUrl")+"/posthome", 302)
 		return
 	}
 
@@ -82,7 +82,7 @@ func (this *LoginController) Login() {
 	user.SessionId = sessionId
 	o.Update(&user, "SessionId")
 
-	this.Redirect("/postform", 302)
+	this.Redirect(beego.AppConfig.String("apiUrl")+"/postform", 302)
 }
 
 func (this *LoginController) Logout() {
