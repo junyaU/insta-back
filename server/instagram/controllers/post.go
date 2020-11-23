@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"regexp"
+	"strconv"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
@@ -120,4 +121,13 @@ func (this *PostController) Post() {
 	o.Insert(&post)
 
 	this.Redirect(beego.AppConfig.String("apiUrl")+"/posthome", 302)
+}
+
+func (this *PostController) Delete() {
+	var postId = this.Ctx.Input.Param(":id")
+	i, _ := strconv.ParseInt(postId, 10, 64)
+	o := orm.NewOrm()
+	post := models.Post{Id: i}
+
+	o.Delete(&post)
 }
