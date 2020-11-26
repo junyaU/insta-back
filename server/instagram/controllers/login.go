@@ -12,10 +12,15 @@ type LoginController struct {
 	beego.Controller
 }
 
+var successCheck struct {
+	Status string `json:"status"`
+}
+
 func (this *LoginController) Signup() {
 	inputName := this.GetString("Name")
 	inputEmail := this.GetString("Email")
 	inputPassword := this.GetString("Password")
+	status := successCheck
 
 	hash, _ := bcrypt.GenerateFromPassword([]byte(inputPassword), 10)
 
@@ -34,7 +39,10 @@ func (this *LoginController) Signup() {
 		userId := session.Get("UserId")
 
 		if userId != nil {
-			this.Redirect(beego.AppConfig.String("apiUrl"), 302)
+			status.Status = "failed"
+			this.Data["json"] = status
+			this.ServeJSON()
+			return
 		}
 
 		this.SetSession("UserId", id)
@@ -46,10 +54,10 @@ func (this *LoginController) Signup() {
 		this.Ctx.SetCookie("instaSessionID", sessionId)
 		o.Update(&user, "SessionId")
 
-		this.Redirect(beego.AppConfig.String("apiUrl")+"/posthome", 302)
-		return
+		status.Status = "success"
+		this.Data["json"] = status
+		this.ServeJSON()
 	}
-	this.Redirect(beego.AppConfig.String("apiUrl"), 302)
 }
 
 func (this *LoginController) Login() {
@@ -59,11 +67,15 @@ func (this *LoginController) Login() {
 	o := orm.NewOrm()
 	user := models.User{Email: inputEmail}
 	err := o.Read(&user, "Email")
+	status := successCheck
+
 	//ハッシュ値と平文を比較
 	passwordError := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(inputPassword))
 
 	if err == orm.ErrNoRows || passwordError != nil {
-		this.Redirect(beego.AppConfig.String("apiUrl")+"/login", 302)
+		status.Status = "failed"
+		this.Data["json"] = status
+		this.ServeJSON()
 		return
 	}
 
@@ -73,7 +85,9 @@ func (this *LoginController) Login() {
 	Name := session.Get("Name")
 
 	if userId != nil || Name != nil {
-		this.Redirect(beego.AppConfig.String("apiUrl")+"/posthome", 302)
+		status.Status = "failed"
+		this.Data["json"] = status
+		this.ServeJSON()
 		return
 	}
 
@@ -86,7 +100,9 @@ func (this *LoginController) Login() {
 	o.Update(&user, "SessionId")
 	this.Ctx.SetCookie("instaSessionID", sessionId)
 
-	this.Redirect(beego.AppConfig.String("apiUrl")+"/postform", 302)
+	status.Status = "success"
+	this.Data["json"] = status
+	this.ServeJSON()
 }
 
 func (this *LoginController) Logout() {
@@ -99,6 +115,4 @@ func (this *LoginController) Logout() {
 		session.Delete("UserId")
 		session.Delete("Name")
 	}
-
-	this.Redirect(beego.AppConfig.String("apiUrl"), 302)
 }
