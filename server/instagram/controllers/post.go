@@ -5,7 +5,6 @@ import (
 	"instagram/models"
 	"io/ioutil"
 	"os"
-	"regexp"
 	"strconv"
 
 	"github.com/astaxie/beego"
@@ -87,12 +86,6 @@ func (this *PostController) Post() {
 	inputComment := this.GetString("Comment")
 	file, header, _ := this.GetFile("Image")
 
-	validation := regexp.MustCompile(".png")
-	if !validation.MatchString(header.Filename) {
-		this.Redirect(beego.AppConfig.String("apiUrl")+"/postform", 302)
-		return
-	}
-
 	defer file.Close()
 
 	filePath := "./static/" + header.Filename
@@ -119,8 +112,6 @@ func (this *PostController) Post() {
 	}
 
 	o.Insert(&post)
-
-	this.Redirect(beego.AppConfig.String("apiUrl")+"/posthome", 302)
 }
 
 func (this *PostController) Delete() {
