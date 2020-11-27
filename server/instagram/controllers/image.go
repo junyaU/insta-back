@@ -5,7 +5,6 @@ import (
 	"instagram/models"
 	"io/ioutil"
 	"os"
-	"regexp"
 	"strconv"
 
 	"github.com/astaxie/beego"
@@ -38,11 +37,6 @@ func (this *ImageController) UploadImage() {
 	inputId, _ := this.GetInt64("userId")
 	filePath := "./static/" + header.Filename
 
-	validation := regexp.MustCompile(".png")
-	if !validation.MatchString(header.Filename) {
-		this.Redirect(beego.AppConfig.String("apiUrl")+"/posthome", 302)
-		return
-	}
 	defer file.Close()
 
 	//一旦ローカルに画像を取り出す
@@ -70,8 +64,6 @@ func (this *ImageController) UploadImage() {
 	o.Update(&uploadUser, "Imageprofile")
 
 	os.Remove(filePath)
-
-	this.Redirect(beego.AppConfig.String("apiUrl")+"/posthome", 302)
 }
 
 //個人のマイページの画像取得
