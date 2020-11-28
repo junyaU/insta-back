@@ -4,14 +4,12 @@ import (
 	"encoding/base64"
 	"instagram/models"
 	"io/ioutil"
-	"os"
 	"strconv"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
 type UserController struct {
@@ -20,18 +18,15 @@ type UserController struct {
 
 func (this *UserController) GetUser() {
 	o := orm.NewOrm()
-
-	var userId = this.Ctx.Input.Param(":id")
-
+	userId := this.Ctx.Input.Param(":id")
 	i, _ := strconv.ParseInt(userId, 10, 64)
-
 	user := models.User{Id: i}
-
 	o.Read(&user)
 
 	o.LoadRelated(&user, "Posts")
 
 	var arr []int64
+
 	if user.Posts != nil {
 		//それぞれの投稿のいいね数を取得
 		for _, post := range user.Posts {
@@ -41,22 +36,15 @@ func (this *UserController) GetUser() {
 
 			imageName := post.Image
 
-			file, _ := os.Create(imageName)
-			defer file.Close()
+			obj, _ := svc.GetObject(&s3.GetObjectInput{
+				Bucket: aws.String(bucketName),
+				Key:    aws.String(imageName),
+			})
+			defer obj.Body.Close()
 
-			downloader := s3manager.NewDownloader(sess)
-			downloader.Download(file,
-				&s3.GetObjectInput{
-					Bucket: aws.String(bucketName),
-					Key:    aws.String(imageName),
-				},
-			)
-
-			fileData, _ := ioutil.ReadAll(file)
+			fileData, _ := ioutil.ReadAll(obj.Body)
 			encData := base64.StdEncoding.EncodeToString(fileData)
 			post.Image = encData
-
-			os.Remove(imageName)
 
 			arr = append(arr, num)
 		}
@@ -71,6 +59,5 @@ func (this *UserController) GetUser() {
 	}
 
 	this.Data["json"] = user
-
 	this.ServeJSON()
 }
