@@ -12,9 +12,8 @@ type SessionController struct {
 }
 
 type SessionData struct {
-	UserId int64  `json:"userid"`
-	Name   string `json:"name"`
-	Email  string `json:"email"`
+	Id   int64  `json:"Id"`
+	Name string `json:"Name"`
 }
 
 func (this *SessionController) GetSessionData() {
@@ -24,8 +23,8 @@ func (this *SessionController) GetSessionData() {
 		return
 	}
 
-	o := orm.NewOrm()
 	sessionUser := models.User{Id: sessionUserId.(int64)}
+	o := orm.NewOrm()
 	o.Read(&sessionUser)
 	sessionId := session.SessionID()
 	//DBに保存された値とsessionIdが一致しなければリターン
@@ -35,6 +34,10 @@ func (this *SessionController) GetSessionData() {
 
 	o.LoadRelated(&sessionUser, "FavoritePosts")
 
-	this.Data["json"] = sessionUser
+	sessData := SessionData{}
+	sessData.Id = sessionUser.Id
+	sessData.Name = sessionUser.Name
+
+	this.Data["json"] = sessData
 	this.ServeJSON()
 }
