@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"instagram/models"
 	"io/ioutil"
-	"os"
 	"strconv"
 
 	"github.com/astaxie/beego"
@@ -35,20 +34,14 @@ var bucketName = beego.AppConfig.String("bucketName")
 func (this *ImageController) UploadImage() {
 	file, header, _ := this.GetFile("Image")
 	inputId, _ := this.GetInt64("userId")
-	filePath := "./static/" + header.Filename
 
 	defer file.Close()
-
-	//一旦ローカルに画像を取り出す
-	this.SaveToFile("Image", filePath)
-
-	openFile, _ := os.Open(filePath)
 
 	uploader := s3manager.NewUploader(sess)
 	uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(header.Filename),
-		Body:   openFile,
+		Body:   file,
 	})
 
 	o := orm.NewOrm()
@@ -56,24 +49,18 @@ func (this *ImageController) UploadImage() {
 	uploadUser := models.User{Id: inputId}
 
 	o.Insert(&imageModel)
-
 	o.Read(&imageModel)
 	o.Read(&uploadUser)
 
 	uploadUser.Imageprofile = &imageModel
 	o.Update(&uploadUser, "Imageprofile")
-
-	os.Remove(filePath)
 }
 
 //個人のマイページの画像取得
 func (this *ImageController) GetProfileImage() {
 	o := orm.NewOrm()
-
 	inputId := this.Ctx.Input.Param(":id")
-
 	userId, _ := strconv.ParseInt(inputId, 10, 64)
-
 	user := models.User{Id: userId}
 
 	o.Read(&user)
@@ -82,32 +69,22 @@ func (this *ImageController) GetProfileImage() {
 	if user.Imageprofile == nil {
 		return
 	}
+
 	o.Read(user.Imageprofile)
 	filename := user.Imageprofile.Image
 
-	file, _ := os.Create(filename)
+	obj, _ := svc.GetObject(&s3.GetObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(filename),
+	})
+	defer obj.Body.Close()
 
-	downloader := s3manager.NewDownloader(sess)
-	downloader.Download(file,
-		&s3.GetObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(filename),
-		},
-	)
-
-	defer file.Close()
-
-	fileData, _ := ioutil.ReadAll(file)
-
+	fileData, _ := ioutil.ReadAll(obj.Body)
 	enc := base64.StdEncoding.EncodeToString(fileData)
 
 	var sendData = ImageData{}
-
 	sendData.Image = enc
 
-	os.Remove(filename)
-
 	this.Data["json"] = sendData
-
 	this.ServeJSON()
 }
