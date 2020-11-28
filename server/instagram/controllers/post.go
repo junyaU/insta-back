@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"instagram/models"
 	"io/ioutil"
-	"os"
 	"strconv"
 
 	"github.com/astaxie/beego"
@@ -35,45 +34,32 @@ func (this *PostController) GetAllPosts() {
 
 		imageName := post.Image
 
-		downloader := s3manager.NewDownloader(sess)
+		obj, _ := svc.GetObject(&s3.GetObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    aws.String(imageName),
+		})
+		defer obj.Body.Close()
 
-		file, _ := os.Create(imageName)
-
-		downloader.Download(file,
-			&s3.GetObjectInput{
-				Bucket: aws.String(bucketName),
-				Key:    aws.String(imageName),
-			},
-		)
-
-		defer file.Close()
-
-		fileData, _ := ioutil.ReadAll(file)
-
+		fileData, _ := ioutil.ReadAll(obj.Body)
 		encData := base64.StdEncoding.EncodeToString(fileData)
-
 		post.Image = encData
 
-		os.Remove(imageName)
-
 		afterPost = append(afterPost, post)
-
 	}
 
 	this.Data["json"] = afterPost
-
 	this.ServeJSON()
 }
 
 func (this *PostController) Post() {
 	//ログインチェック
 	session := this.StartSession()
-	userId := session.Get("UserId")
-	if userId == nil {
+	sessionUserId := session.Get("UserId")
+	if sessionUserId == nil {
 		this.Redirect(beego.AppConfig.String("apiUrl"), 302)
 		return
 	}
-	sessionUser := models.User{Id: userId.(int64)}
+	sessionUser := models.User{Id: sessionUserId.(int64)}
 	o := orm.NewOrm()
 	o.Read(&sessionUser)
 
@@ -83,31 +69,22 @@ func (this *PostController) Post() {
 		return
 	}
 
+	userId, _ := this.GetInt64("UserId")
 	inputComment := this.GetString("Comment")
 	file, header, _ := this.GetFile("Image")
 
 	defer file.Close()
 
-	filePath := "./static/" + header.Filename
-
-	//一旦ローカルに画像を取り出す
-	this.SaveToFile("Image", filePath)
-
-	openFile, _ := os.Open(filePath)
-
 	uploader := s3manager.NewUploader(sess)
 	uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(header.Filename),
-		Body:   openFile,
+		Body:   file,
 	})
-
-	//ローカル画像の削除
-	os.Remove(filePath)
 
 	post := models.Post{
 		Comment: inputComment,
-		User:    &models.User{Id: userId.(int64)},
+		User:    &models.User{Id: userId},
 		Image:   header.Filename,
 	}
 
