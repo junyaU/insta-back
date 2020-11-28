@@ -13,28 +13,29 @@ type FavoriteController struct {
 }
 
 func (this *FavoriteController) Favorite() {
-	session := this.StartSession()
-	sessionUserId := session.Get("UserId")
-	name := session.Get("Name")
+	userId, _ := this.GetInt64("userid")
+	postId, _ := this.GetInt64("postid")
 
-	if sessionUserId == nil || name == nil {
-		this.Redirect(beego.AppConfig.String("apiUrl"), 302)
-		return
-	}
-
-	id, _ := this.GetInt64("postid")
-
-	o := orm.NewOrm()
-	post := models.Post{Id: id}
-
-	m2m := o.QueryM2M(&post, "Favorite")
-
-	userId := sessionUserId.(int64)
+	post := models.Post{Id: postId}
 	user := models.User{Id: userId}
 
+	o := orm.NewOrm()
 	o.Read(&user)
-
+	m2m := o.QueryM2M(&post, "Favorite")
 	m2m.Add(user)
+}
+
+func (this *FavoriteController) UnFavorite() {
+	userId, _ := this.GetInt64("userid")
+	postId, _ := this.GetInt64("postid")
+
+	post := models.Post{Id: postId}
+	user := models.User{Id: userId}
+
+	o := orm.NewOrm()
+	o.Read(&user)
+	m2m := o.QueryM2M(&post, "Favorite")
+	m2m.Remove(user)
 }
 
 func (this *FavoriteController) GetFavoriteUser() {

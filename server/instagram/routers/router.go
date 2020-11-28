@@ -21,6 +21,7 @@ func init() {
 		beego.NSRouter("/post", &controllers.PostController{}, "get,post:Post"),
 		beego.NSRouter("/getpost", &controllers.PostController{}, "get:GetAllPosts"),
 		beego.NSRouter("/favorite", &controllers.FavoriteController{}, "post:Favorite"),
+		beego.NSRouter("/unfavorite", &controllers.FavoriteController{}, "post:UnFavorite"),
 		beego.NSRouter("/user/?:id", &controllers.UserController{}, "get:GetUser"),
 		beego.NSRouter("/getsession", &controllers.SessionController{}, "get:GetSessionData"),
 		beego.NSRouter("/upload", &controllers.ImageController{}, "post:UploadImage"),
