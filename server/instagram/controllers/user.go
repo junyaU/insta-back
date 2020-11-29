@@ -61,3 +61,17 @@ func (this *UserController) GetUser() {
 	this.Data["json"] = user
 	this.ServeJSON()
 }
+
+func (this *UserController) EditUserStatus() {
+	userId, _ := this.GetInt64("UserId")
+	name := this.GetString("Name")
+	email := this.GetString("Email")
+
+	user := models.User{Id: userId}
+	o := orm.NewOrm()
+	o.Read(&user)
+	user.Name = name
+	user.Email = email
+
+	o.Update(&user)
+}
