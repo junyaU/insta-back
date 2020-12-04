@@ -9,6 +9,10 @@ package routers
 
 import (
 	"instagram/controllers"
+	"instagram/models"
+
+	"github.com/astaxie/beego/context"
+	"github.com/astaxie/beego/orm"
 
 	"github.com/astaxie/beego"
 )
@@ -18,19 +22,41 @@ func init() {
 		beego.NSRouter("/login", &controllers.LoginController{}, "post:Login"),
 		beego.NSRouter("/logout", &controllers.LoginController{}, "get:Logout"),
 		beego.NSRouter("/signup", &controllers.LoginController{}, "get,post:Signup"),
-		beego.NSRouter("/post", &controllers.PostController{}, "get,post:Post"),
 		beego.NSRouter("/getpost", &controllers.PostController{}, "get:GetAllPosts"),
-		beego.NSRouter("/favorite", &controllers.FavoriteController{}, "post:Favorite"),
-		beego.NSRouter("/unfavorite", &controllers.FavoriteController{}, "post:UnFavorite"),
 		beego.NSRouter("/user/?:id", &controllers.UserController{}, "get:GetUser"),
 		beego.NSRouter("/getsession", &controllers.SessionController{}, "get:GetSessionData"),
-		beego.NSRouter("/upload", &controllers.ImageController{}, "post:UploadImage"),
 		beego.NSRouter("/getprofileimage/?:id", &controllers.ImageController{}, "get:GetProfileImage"),
 		beego.NSRouter("/getfavoriteuser/?:id", &controllers.FavoriteController{}, "get:GetFavoriteUser"),
-		beego.NSRouter("/deletepost/?:id", &controllers.PostController{}, "get:Delete"),
-		beego.NSRouter("/editprofile", &controllers.UserController{}, "post:EditUserStatus"),
-		beego.NSRouter("/changepassword", &controllers.UserController{}, "post:ChangePassword"),
+
+		beego.NSNamespace("/auth",
+			beego.NSBefore(authCheck),
+			beego.NSRouter("/post", &controllers.PostController{}, "get,post:Post"),
+			beego.NSRouter("/favorite", &controllers.FavoriteController{}, "post:Favorite"),
+			beego.NSRouter("/unfavorite", &controllers.FavoriteController{}, "post:UnFavorite"),
+			beego.NSRouter("/upload", &controllers.ImageController{}, "post:UploadImage"),
+			beego.NSRouter("/deletepost/?:id", &controllers.PostController{}, "get:Delete"),
+			beego.NSRouter("/editprofile", &controllers.UserController{}, "post:EditUserStatus"),
+			beego.NSRouter("/changepassword", &controllers.UserController{}, "post:ChangePassword"),
+		),
 	)
 
 	beego.AddNamespace(ns)
+}
+
+func authCheck(ctx *context.Context) {
+	o := orm.NewOrm()
+	sessionUserId, err := ctx.Input.CruSession.Get("UserId").(int64)
+	sessionId := ctx.Input.CruSession.SessionID()
+	user := models.User{Id: sessionUserId}
+	o.Read(&user)
+
+	if err == false {
+		ctx.Redirect(302, "/")
+		return
+	}
+
+	if user.SessionId != sessionId {
+		ctx.Redirect(302, "/")
+		return
+	}
 }
