@@ -1,10 +1,18 @@
 package controllers
 
 import (
+	"bytes"
 	"encoding/base64"
+	"image"
+	"image/gif"
+	"image/jpeg"
+	"image/png"
 	"instagram/models"
 	"io/ioutil"
 	"strconv"
+	"strings"
+
+	"github.com/nfnt/resize"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
@@ -72,14 +80,37 @@ func (this *PostController) Post() {
 	userId, _ := this.GetInt64("UserId")
 	inputComment := this.GetString("Comment")
 	file, header, _ := this.GetFile("Image")
+	var img image.Image
+	var jpgOpts jpeg.Options
+	var gifOpts gif.Options
+	jpgOpts.Quality = 1
+	gifOpts.NumColors = 1
+	buf := new(bytes.Buffer)
 
+	if strings.Contains(header.Filename, ".png") {
+		img, _ = png.Decode(file)
+	} else if strings.Contains(header.Filename, ".jpg") || strings.Contains(header.Filename, "jpeg") {
+		img, _ = jpeg.Decode(file)
+	} else if strings.Contains(header.Filename, ".gif") {
+		img, _ = gif.Decode(file)
+	} else {
+		//gif,png,jpgファイル以外は受け付けない
+		return
+	}
+
+	//ファイルリサイズ
+	resizeFile := resize.Resize(300, 0, img, resize.Lanczos3)
+	png.Encode(buf, resizeFile)
+	jpeg.Encode(buf, resizeFile, &jpgOpts)
+	gif.Encode(buf, resizeFile, &gifOpts)
+	reader := bytes.NewReader(buf.Bytes())
 	defer file.Close()
 
 	uploader := s3manager.NewUploader(sess)
 	uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(header.Filename),
-		Body:   file,
+		Body:   reader,
 	})
 
 	post := models.Post{
