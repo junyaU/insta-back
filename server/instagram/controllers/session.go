@@ -41,3 +41,19 @@ func (this *SessionController) GetSessionData() {
 	this.Data["json"] = sessData
 	this.ServeJSON()
 }
+
+func (this *SessionController) AuthCheck() {
+	o := orm.NewOrm()
+	session := this.StartSession()
+	sessionUserId := session.Get("UserId")
+	if sessionUserId == nil {
+		return
+	}
+
+	sessionId := session.SessionID()
+	sessionUser := models.User{Id: sessionUserId.(int64)}
+	o.Read(&sessionUser)
+	if sessionUser.SessionId != sessionId {
+		return
+	}
+}

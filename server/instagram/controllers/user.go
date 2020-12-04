@@ -10,6 +10,7 @@ import (
 	"github.com/astaxie/beego/orm"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserController struct {
@@ -57,6 +58,44 @@ func (this *UserController) GetUser() {
 
 		user.TotalFavorited = int64(favoriteNum)
 	}
+
+	this.Data["json"] = user
+	this.ServeJSON()
+}
+
+func (this *UserController) EditUserStatus() {
+	userId, _ := this.GetInt64("UserId")
+	name := this.GetString("Name")
+	email := this.GetString("Email")
+
+	user := models.User{Id: userId}
+	o := orm.NewOrm()
+	o.Read(&user)
+	user.Name = name
+	user.Email = email
+
+	o.Update(&user)
+}
+
+func (this *UserController) ChangePassword() {
+	userId, _ := this.GetInt64("UserId")
+	nowPassword := this.GetString("NowPassword")
+	newPassword := this.GetString("NewPassword")
+	o := orm.NewOrm()
+
+	user := models.User{Id: userId}
+	o.Read(&user)
+
+	passwordError := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(nowPassword))
+
+	if passwordError != nil {
+		return
+	}
+
+	hash, _ := bcrypt.GenerateFromPassword([]byte(newPassword), 10)
+	hashPassword := string(hash)
+	user.Password = hashPassword
+	o.Update(&user, "Password")
 
 	this.Data["json"] = user
 	this.ServeJSON()
