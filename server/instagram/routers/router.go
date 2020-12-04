@@ -29,6 +29,7 @@ func init() {
 		beego.NSRouter("/getfavoriteuser/?:id", &controllers.FavoriteController{}, "get:GetFavoriteUser"),
 		beego.NSRouter("/deletepost/?:id", &controllers.PostController{}, "get:Delete"),
 		beego.NSRouter("/editprofile", &controllers.UserController{}, "post:EditUserStatus"),
+		beego.NSRouter("/changepassword", &controllers.UserController{}, "post:ChangePassword"),
 	)
 
 	beego.AddNamespace(ns)
