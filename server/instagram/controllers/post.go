@@ -31,16 +31,14 @@ func (this *PostController) GetAllPosts() {
 
 	o.QueryTable(new(models.Post)).RelatedSel("User").OrderBy("-Created").All(&allPosts)
 
-	var afterPost []models.Post
-
-	for _, post := range allPosts {
+	for i := 0; i < len(allPosts); i++ {
 		//お気に入りの処理
-		o.LoadRelated(&post, "Favorite")
-		m2m := o.QueryM2M(&post, "Favorite")
+		o.LoadRelated(&allPosts[i], "Favorite")
+		m2m := o.QueryM2M(&allPosts[i], "Favorite")
 		nums, _ := m2m.Count()
-		post.Favonum = nums
+		allPosts[i].Favonum = nums
 
-		imageName := post.Image
+		imageName := allPosts[i].Image
 
 		obj, _ := svc.GetObject(&s3.GetObjectInput{
 			Bucket: aws.String(bucketName),
@@ -50,12 +48,10 @@ func (this *PostController) GetAllPosts() {
 
 		fileData, _ := ioutil.ReadAll(obj.Body)
 		encData := base64.StdEncoding.EncodeToString(fileData)
-		post.Image = encData
-
-		afterPost = append(afterPost, post)
+		allPosts[i].Image = encData
 	}
 
-	this.Data["json"] = afterPost
+	this.Data["json"] = allPosts
 	this.ServeJSON()
 }
 
