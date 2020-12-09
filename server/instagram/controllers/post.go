@@ -28,34 +28,46 @@ type PostController struct {
 func (this *PostController) GetAllPosts() {
 	o := orm.NewOrm()
 	var allPosts []models.Post
-
 	o.QueryTable(new(models.Post)).RelatedSel("User").OrderBy("-Created").All(&allPosts)
 
-	var afterPost []models.Post
+	for i := 0; i < len(allPosts); i++ {
+		//チャネル定義
+		favorites := make(chan int64)
+		imgNames := make(chan string)
 
-	for _, post := range allPosts {
 		//お気に入りの処理
-		o.LoadRelated(&post, "Favorite")
-		m2m := o.QueryM2M(&post, "Favorite")
-		nums, _ := m2m.Count()
-		post.Favonum = nums
+		go func() {
+			o.LoadRelated(&allPosts[i], "Favorite")
+			m2m := o.QueryM2M(&allPosts[i], "Favorite")
+			nums, _ := m2m.Count()
+			favorites <- nums
+		}()
 
-		imageName := post.Image
+		//画像取得の処理
+		go func() {
+			imageName := allPosts[i].Image
+			obj, _ := svc.GetObject(&s3.GetObjectInput{
+				Bucket: aws.String(bucketName),
+				Key:    aws.String(imageName),
+			})
+			defer obj.Body.Close()
+			fileData, _ := ioutil.ReadAll(obj.Body)
+			encData := base64.StdEncoding.EncodeToString(fileData)
+			imgNames <- encData
+		}()
 
-		obj, _ := svc.GetObject(&s3.GetObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(imageName),
-		})
-		defer obj.Body.Close()
-
-		fileData, _ := ioutil.ReadAll(obj.Body)
-		encData := base64.StdEncoding.EncodeToString(fileData)
-		post.Image = encData
-
-		afterPost = append(afterPost, post)
+		for n := 0; n < 2; n++ {
+			select {
+			case c1 := <-favorites:
+				allPosts[i].Favonum = c1
+			case c2 := <-imgNames:
+				allPosts[i].Image = c2
+			}
+		}
+		close(favorites)
+		close(imgNames)
 	}
-
-	this.Data["json"] = afterPost
+	this.Data["json"] = allPosts
 	this.ServeJSON()
 }
 
