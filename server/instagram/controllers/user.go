@@ -22,40 +22,55 @@ func (this *UserController) GetUser() {
 	userId := this.Ctx.Input.Param(":id")
 	i, _ := strconv.ParseInt(userId, 10, 64)
 	user := models.User{Id: i}
-	o.Read(&user)
 
+	o.Read(&user)
 	o.LoadRelated(&user, "Posts")
 
-	var arr []int64
-
 	if user.Posts != nil {
-		//それぞれの投稿のいいね数を取得
-		for _, post := range user.Posts {
-			m2m := o.QueryM2M(post, "Favorite")
-			num, _ := m2m.Count()
-			post.Favonum = int64(num)
+		for i := 0; i < len(user.Posts); i++ {
+			//チャネル定義
+			favorites := make(chan int64)
+			imgNames := make(chan string)
 
-			imageName := post.Image
+			//いいね数取得
+			go func() {
+				m2m := o.QueryM2M(user.Posts[i], "Favorite")
+				num, _ := m2m.Count()
+				favorites <- num
+			}()
 
-			obj, _ := svc.GetObject(&s3.GetObjectInput{
-				Bucket: aws.String(bucketName),
-				Key:    aws.String(imageName),
-			})
-			defer obj.Body.Close()
+			//画像取得
+			go func() {
+				imageName := user.Posts[i].Image
+				obj, _ := svc.GetObject(&s3.GetObjectInput{
+					Bucket: aws.String(bucketName),
+					Key:    aws.String(imageName),
+				})
+				defer obj.Body.Close()
 
-			fileData, _ := ioutil.ReadAll(obj.Body)
-			encData := base64.StdEncoding.EncodeToString(fileData)
-			post.Image = encData
+				fileData, _ := ioutil.ReadAll(obj.Body)
+				encData := base64.StdEncoding.EncodeToString(fileData)
+				imgNames <- encData
+			}()
 
-			arr = append(arr, num)
+			for n := 0; n < 2; n++ {
+				select {
+				case c1 := <-favorites:
+					user.Posts[i].Favonum = c1
+				case c2 := <-imgNames:
+					user.Posts[i].Image = c2
+				}
+			}
+
+			close(favorites)
+			close(imgNames)
 		}
 
 		//いいねの合計数を取得
 		favoriteNum := 0
-		for i := 0; i < len(arr); i++ {
-			favoriteNum = favoriteNum + int(arr[i])
+		for i := 0; i < len(user.Posts); i++ {
+			favoriteNum = favoriteNum + int(user.Posts[i].Favonum)
 		}
-
 		user.TotalFavorited = int64(favoriteNum)
 	}
 
