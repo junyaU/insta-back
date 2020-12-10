@@ -76,7 +76,6 @@ func (this *PostController) Post() {
 	session := this.StartSession()
 	sessionUserId := session.Get("UserId")
 	if sessionUserId == nil {
-		this.Redirect(beego.AppConfig.String("apiUrl"), 302)
 		return
 	}
 	sessionUser := models.User{Id: sessionUserId.(int64)}
@@ -85,7 +84,6 @@ func (this *PostController) Post() {
 
 	sessionId := session.SessionID()
 	if sessionUser.SessionId != sessionId {
-		this.Redirect(beego.AppConfig.String("apiUrl"), 302)
 		return
 	}
 
