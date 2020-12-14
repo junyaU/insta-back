@@ -44,7 +44,7 @@ func setupDB() {
 	orm.RegisterDriver(db, orm.DRMySQL)
 	orm.RegisterDataBase("default", db, beego.AppConfig.String("sqlconn")+"?charset=utf8")
 	orm.RegisterModel(
-		new(models.User), new(models.Post), new(models.Imageprofile),
+		new(models.User), new(models.Post), new(models.Imageprofile), new(models.Comment),
 	)
 	err := orm.RunSyncdb("default", false, true)
 	if err != nil {

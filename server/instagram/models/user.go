@@ -14,6 +14,7 @@ type User struct {
 	SessionId      string        `orm:"size(100);null"`
 	Posts          []*Post       `orm:"reverse(many)"`
 	FavoritePosts  []*Post       `orm:"rel(m2m);rel_table(favorite)"`
+	Comments       []*Comment    `orm:"reverse(many)"`
 	Created        time.Time     `orm:"auto_now_add;type(datetime)"`
 	Updated        time.Time     `orm:"auto_now;type(datetime)"`
 }
