@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/nfnt/resize"
 
@@ -30,21 +31,55 @@ func (this *PostController) GetAllPosts() {
 	var allPosts []models.Post
 	o.QueryTable(new(models.Post)).RelatedSel("User").OrderBy("-Created").All(&allPosts)
 
-	for i := 0; i < len(allPosts); i++ {
-		//チャネル定義
-		favorites := make(chan int64)
-		imgNames := make(chan string)
-
+	var postWg sync.WaitGroup
+	for num := 0; num < len(allPosts); num++ {
 		//お気に入りの処理
-		go func() {
+		postWg.Add(1)
+		go func(i int) {
+			defer postWg.Done()
 			o.LoadRelated(&allPosts[i], "Favorite")
 			m2m := o.QueryM2M(&allPosts[i], "Favorite")
 			nums, _ := m2m.Count()
-			favorites <- nums
-		}()
+			allPosts[i].Favonum = nums
+		}(num)
+
+		//コメント読み込み
+		postWg.Add(1)
+		go func(i int) {
+			defer postWg.Done()
+			o.LoadRelated(&allPosts[i], "Comments")
+			if len(allPosts[i].Comments) != 0 {
+				var commentWg sync.WaitGroup
+				for commentNum := 0; commentNum < len(allPosts[i].Comments); commentNum++ {
+					commentWg.Add(1)
+					go func(cNum int) {
+						defer commentWg.Done()
+						comments := allPosts[i].Comments[cNum]
+						o.LoadRelated(comments, "User")
+						o.LoadRelated(comments.User, "Imageprofile")
+
+						if comments.User.Imageprofile != nil {
+							imageName := comments.User.Imageprofile.Image
+							obj, _ := svc.GetObject(&s3.GetObjectInput{
+								Bucket: aws.String(bucketName),
+								Key:    aws.String(imageName),
+							})
+							defer obj.Body.Close()
+							fileData, _ := ioutil.ReadAll(obj.Body)
+							encData := base64.StdEncoding.EncodeToString(fileData)
+							comments.User.Imageprofile.Image = encData
+						}
+					}(commentNum)
+				}
+				commentWg.Wait()
+			}
+		}(num)
 
 		//画像取得の処理
-		go func() {
+		postWg.Add(1)
+		go func(i int) {
+			defer postWg.Done()
+
 			imageName := allPosts[i].Image
 			obj, _ := svc.GetObject(&s3.GetObjectInput{
 				Bucket: aws.String(bucketName),
@@ -53,20 +88,11 @@ func (this *PostController) GetAllPosts() {
 			defer obj.Body.Close()
 			fileData, _ := ioutil.ReadAll(obj.Body)
 			encData := base64.StdEncoding.EncodeToString(fileData)
-			imgNames <- encData
-		}()
+			allPosts[i].Image = encData
+		}(num)
 
-		for n := 0; n < 2; n++ {
-			select {
-			case c1 := <-favorites:
-				allPosts[i].Favonum = c1
-			case c2 := <-imgNames:
-				allPosts[i].Image = c2
-			}
-		}
-		close(favorites)
-		close(imgNames)
 	}
+	postWg.Wait()
 	this.Data["json"] = allPosts
 	this.ServeJSON()
 }
