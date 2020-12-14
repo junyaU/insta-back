@@ -37,6 +37,7 @@ func init() {
 			beego.NSRouter("/deletepost/?:id", &controllers.PostController{}, "get:Delete"),
 			beego.NSRouter("/editprofile", &controllers.UserController{}, "post:EditUserStatus"),
 			beego.NSRouter("/changepassword", &controllers.UserController{}, "post:ChangePassword"),
+			beego.NSRouter("/comment", &controllers.CommentController{}, "post:Comment"),
 		),
 	)
 
