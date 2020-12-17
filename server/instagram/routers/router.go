@@ -23,6 +23,7 @@ func init() {
 		beego.NSRouter("/logout", &controllers.LoginController{}, "get:Logout"),
 		beego.NSRouter("/signup", &controllers.LoginController{}, "get,post:Signup"),
 		beego.NSRouter("/getpost", &controllers.PostController{}, "get:GetAllPosts"),
+		beego.NSRouter("/followUser/?:id", &controllers.FollowController{}, "get:GetFollowUsers"),
 		beego.NSRouter("/user/?:id", &controllers.UserController{}, "get:GetUser"),
 		beego.NSRouter("/getsession", &controllers.SessionController{}, "get:GetSessionData"),
 		beego.NSRouter("/getprofileimage/?:id", &controllers.ImageController{}, "get:GetProfileImage"),
@@ -38,6 +39,8 @@ func init() {
 			beego.NSRouter("/editprofile", &controllers.UserController{}, "post:EditUserStatus"),
 			beego.NSRouter("/changepassword", &controllers.UserController{}, "post:ChangePassword"),
 			beego.NSRouter("/comment", &controllers.CommentController{}, "post:Comment"),
+			beego.NSRouter("/follow", &controllers.FollowController{}, "post:Follow"),
+			beego.NSRouter("/unfollow", &controllers.FollowController{}, "post:UnFollow"),
 		),
 	)
 
