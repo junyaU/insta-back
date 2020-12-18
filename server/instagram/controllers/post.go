@@ -75,7 +75,7 @@ func (this *PostController) GetAllPosts() {
 			}
 		}(num)
 
-		//画像取得の処理
+		//投稿画像取得の処理
 		postWg.Add(1)
 		go func(i int) {
 			defer postWg.Done()
@@ -89,6 +89,24 @@ func (this *PostController) GetAllPosts() {
 			fileData, _ := ioutil.ReadAll(obj.Body)
 			encData := base64.StdEncoding.EncodeToString(fileData)
 			allPosts[i].Image = encData
+		}(num)
+
+		//ユーザー画像の取得
+		postWg.Add(1)
+		go func(i int) {
+			postWg.Done()
+			o.LoadRelated(allPosts[i].User, "Imageprofile")
+			if allPosts[i].User.Imageprofile != nil {
+				imageName := allPosts[i].User.Imageprofile.Image
+				obj, _ := svc.GetObject(&s3.GetObjectInput{
+					Bucket: aws.String(bucketName),
+					Key:    aws.String(imageName),
+				})
+				defer obj.Body.Close()
+				fileData, _ := ioutil.ReadAll(obj.Body)
+				encData := base64.StdEncoding.EncodeToString(fileData)
+				allPosts[i].User.Imageprofile.Image = encData
+			}
 		}(num)
 
 	}
