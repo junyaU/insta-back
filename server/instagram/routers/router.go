@@ -41,6 +41,8 @@ func init() {
 			beego.NSRouter("/comment", &controllers.CommentController{}, "post:Comment"),
 			beego.NSRouter("/follow", &controllers.FollowController{}, "post:Follow"),
 			beego.NSRouter("/unfollow", &controllers.FollowController{}, "post:UnFollow"),
+			beego.NSRouter("/chat", &controllers.ChatController{}, "get:Chat"),
+			beego.NSRouter("/getchatdata/?:id", &controllers.ChatController{}, "get:GetChatData"),
 		),
 	)
 
