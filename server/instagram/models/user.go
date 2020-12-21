@@ -16,6 +16,7 @@ type User struct {
 	FavoritePosts  []*Post       `orm:"rel(m2m);rel_table(favorite)"`
 	Comments       []*Comment    `orm:"reverse(many)"`
 	Follows        []*Follow     `orm:"reverse(many)"`
+	Chats          []*Chat       `orm:"reverse(many)"`
 	Created        time.Time     `orm:"auto_now_add;type(datetime)"`
 	Updated        time.Time     `orm:"auto_now;type(datetime)"`
 }
