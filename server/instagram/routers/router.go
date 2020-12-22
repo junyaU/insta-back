@@ -43,6 +43,7 @@ func init() {
 			beego.NSRouter("/unfollow", &controllers.FollowController{}, "post:UnFollow"),
 			beego.NSRouter("/chat", &controllers.ChatController{}, "get:Chat"),
 			beego.NSRouter("/getchatdata/?:id", &controllers.ChatController{}, "get:GetChatData"),
+			beego.NSRouter("/getchatlist/?:id", &controllers.ChatController{}, "get:GetChatList"),
 		),
 	)
 
