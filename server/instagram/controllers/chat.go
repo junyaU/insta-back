@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"encoding/base64"
 	"instagram/models"
+	"io/ioutil"
 	"net/http"
 	"sort"
 	"strconv"
@@ -9,6 +11,8 @@ import (
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/gorilla/websocket"
 )
 
@@ -119,4 +123,120 @@ func (this *ChatController) GetChatData() {
 
 	this.Data["json"] = toChat
 	this.ServeJSON()
+}
+
+func (this *ChatController) GetChatList() {
+	var wg sync.WaitGroup
+	var fromArr []models.Chat
+	var toArr []models.Chat
+	var fromIds []int64
+	var toIds []int64
+	o := orm.NewOrm()
+	userId := this.Ctx.Input.Param(":id")
+	i, _ := strconv.ParseInt(userId, 10, 64)
+	user := models.User{Id: i}
+	o.Read(&user)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		o.QueryTable(new(models.Chat)).Filter("from_id", user.Id).All(&fromArr)
+		var fromWg sync.WaitGroup
+		for num := 0; num < len(fromArr); num++ {
+			fromWg.Add(1)
+			go func(i int) {
+				defer fromWg.Done()
+				//同じ数字があった場合は配列に入れない(ユーザー重複するため)
+				if fromIds == nil {
+					fromIds = append(fromIds, fromArr[i].To.Id)
+				}
+
+				if !arrayNumberCheck(fromIds, fromArr[i].To.Id) {
+					fromIds = append(fromIds, fromArr[i].To.Id)
+				}
+			}(num)
+		}
+		fromWg.Wait()
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		o.QueryTable(new(models.Chat)).Filter("to_id", user.Id).All(&toArr)
+		var toWg sync.WaitGroup
+		for num := 0; num < len(toArr); num++ {
+			toWg.Add(1)
+			go func(i int) {
+				defer toWg.Done()
+				//同じ数字があった場合は配列に入れない(ユーザー重複するため)
+				if toIds == nil {
+					toIds = append(toIds, toArr[i].From.Id)
+				}
+
+				if !arrayNumberCheck(toIds, toArr[i].From.Id) {
+					toIds = append(toIds, toArr[i].From.Id)
+				}
+			}(num)
+		}
+		toWg.Wait()
+	}()
+	wg.Wait()
+
+	for i := 0; i < len(fromIds); i++ {
+		if !arrayNumberCheck(toIds, fromIds[i]) {
+			toIds = append(toIds, fromIds[i])
+		}
+	}
+
+	var latestData []map[string]interface{}
+	var chatDataWg sync.WaitGroup
+
+	for _, toId := range toIds {
+		chatDataWg.Add(1)
+		go func(toId int64) {
+			defer chatDataWg.Done()
+			var latestArr []models.Chat
+			var latestTo models.Chat
+			toUser := models.User{Id: toId}
+			o.Read(&toUser)
+
+			o.LoadRelated(&toUser, "Imageprofile")
+			if toUser.Imageprofile != nil {
+				imageName := toUser.Imageprofile.Image
+				obj, _ := svc.GetObject(&s3.GetObjectInput{
+					Bucket: aws.String(bucketName),
+					Key:    aws.String(imageName),
+				})
+				defer obj.Body.Close()
+				fileData, _ := ioutil.ReadAll(obj.Body)
+				encData := base64.StdEncoding.EncodeToString(fileData)
+				toUser.Imageprofile.Image = encData
+			}
+
+			o.QueryTable(new(models.Chat)).Filter("from_id", user.Id).Filter("to_id", toId).OrderBy("-Created").One(&latestArr)
+			o.QueryTable(new(models.Chat)).Filter("from_id", toId).Filter("to_id", user.Id).OrderBy("-Created").One(&latestTo)
+			latestArr = append(latestArr, latestTo)
+			sort.Slice(latestArr, func(i, j int) bool { return latestArr[i].Created.After(latestArr[j].Created) })
+
+			chatDatas := map[string]interface{}{
+				"User":          toUser,
+				"LatestMessage": latestArr[0].Text,
+			}
+			latestData = append(latestData, chatDatas)
+		}(toId)
+	}
+	chatDataWg.Wait()
+
+	this.Data["json"] = latestData
+	this.ServeJSON()
+}
+
+//配列に特定の値があるかチェック
+func arrayNumberCheck(arr []int64, num int64) bool {
+	for _, i := range arr {
+		if i == num {
+			return true
+		}
+	}
+	return false
 }
