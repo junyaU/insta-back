@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
@@ -221,11 +222,17 @@ func (this *ChatController) GetChatList() {
 			chatDatas := map[string]interface{}{
 				"User":          toUser,
 				"LatestMessage": latestArr[0].Text,
+				"time":          latestArr[0].Created,
 			}
 			latestData = append(latestData, chatDatas)
 		}(toId)
 	}
 	chatDataWg.Wait()
+
+	//メッセージ全体を最新順に並び替える
+	sort.Slice(latestData, func(i, j int) bool {
+		return latestData[i]["time"].(time.Time).After(latestData[j]["time"].(time.Time))
+	})
 
 	this.Data["json"] = latestData
 	this.ServeJSON()
