@@ -42,7 +42,7 @@ func setupDB() {
 	db := beego.AppConfig.String("driver")
 
 	orm.RegisterDriver(db, orm.DRMySQL)
-	orm.RegisterDataBase("default", db, beego.AppConfig.String("sqlconn")+"?charset=utf8")
+	orm.RegisterDataBase("default", db, beego.AppConfig.String("sqlconn")+"?charset=utf8&&loc=Asia%2FTokyo")
 	orm.RegisterModel(
 		new(models.User), new(models.Post), new(models.Imageprofile), new(models.Comment), new(models.Follow), new(models.Chat),
 	)
