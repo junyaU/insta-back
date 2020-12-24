@@ -5,6 +5,7 @@ import (
 	"instagram/models"
 	"io/ioutil"
 	"strconv"
+	"sync"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
@@ -22,25 +23,26 @@ func (this *UserController) GetUser() {
 	userId := this.Ctx.Input.Param(":id")
 	i, _ := strconv.ParseInt(userId, 10, 64)
 	user := models.User{Id: i}
+	var wg sync.WaitGroup
 
 	o.Read(&user)
 	o.LoadRelated(&user, "Posts")
 
 	if user.Posts != nil {
 		for i := 0; i < len(user.Posts); i++ {
-			//チャネル定義
-			favorites := make(chan int64)
-			imgNames := make(chan string)
-
 			//いいね数取得
-			go func() {
+			wg.Add(1)
+			go func(i int) {
+				defer wg.Done()
 				m2m := o.QueryM2M(user.Posts[i], "Favorite")
 				num, _ := m2m.Count()
-				favorites <- num
-			}()
+				user.Posts[i].Favonum = num
+			}(i)
 
 			//画像取得
-			go func() {
+			wg.Add(1)
+			go func(i int) {
+				defer wg.Done()
 				imageName := user.Posts[i].Image
 				obj, _ := svc.GetObject(&s3.GetObjectInput{
 					Bucket: aws.String(bucketName),
@@ -50,21 +52,18 @@ func (this *UserController) GetUser() {
 
 				fileData, _ := ioutil.ReadAll(obj.Body)
 				encData := base64.StdEncoding.EncodeToString(fileData)
-				imgNames <- "data:image/jpg;base64," + encData
-			}()
+				user.Posts[i].Image = "data:image/jpg;base64," + encData
+			}(i)
 
-			for n := 0; n < 2; n++ {
-				select {
-				case c1 := <-favorites:
-					user.Posts[i].Favonum = c1
-				case c2 := <-imgNames:
-					user.Posts[i].Image = c2
-				}
-			}
+			//コメント読み込み
+			wg.Add(1)
+			go func(i int) {
+				defer wg.Done()
+				o.LoadRelated(user.Posts[i], "Comments")
+			}(i)
 
-			close(favorites)
-			close(imgNames)
 		}
+		wg.Wait()
 
 		//いいねの合計数を取得
 		favoriteNum := 0
