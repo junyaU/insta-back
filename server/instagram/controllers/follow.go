@@ -85,7 +85,7 @@ func (this *FollowController) GetFollowUsers() {
 					defer obj.Body.Close()
 					fileData, _ := ioutil.ReadAll(obj.Body)
 					encData := base64.StdEncoding.EncodeToString(fileData)
-					followingUsers[i].To.Imageprofile.Image = encData
+					followingUsers[i].To.Imageprofile.Image = "data:image/jpg;base64," + encData
 				}
 				followeeArr = append(followeeArr, followingUsers[i].To)
 			}(num)
@@ -113,7 +113,7 @@ func (this *FollowController) GetFollowUsers() {
 					defer obj.Body.Close()
 					fileData, _ := ioutil.ReadAll(obj.Body)
 					encData := base64.StdEncoding.EncodeToString(fileData)
-					followers[i].Me.Imageprofile.Image = encData
+					followers[i].Me.Imageprofile.Image = "data:image/jpg;base64," + encData
 				}
 				followersArr = append(followersArr, followers[i].Me)
 			}(num)

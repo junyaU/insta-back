@@ -28,6 +28,7 @@ func init() {
 		beego.NSRouter("/getsession", &controllers.SessionController{}, "get:GetSessionData"),
 		beego.NSRouter("/getprofileimage/?:id", &controllers.ImageController{}, "get:GetProfileImage"),
 		beego.NSRouter("/getfavoriteuser/?:id", &controllers.FavoriteController{}, "get:GetFavoriteUser"),
+		beego.NSRouter("/getpostdetail/?:id", &controllers.PostController{}, "get:GetPostDetail"),
 
 		beego.NSNamespace("/auth",
 			beego.NSBefore(authCheck),

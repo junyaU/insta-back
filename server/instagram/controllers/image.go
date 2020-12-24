@@ -113,7 +113,7 @@ func (this *ImageController) GetProfileImage() {
 	enc := base64.StdEncoding.EncodeToString(fileData)
 
 	var sendData = ImageData{}
-	sendData.Image = enc
+	sendData.Image = "data:image/jpg;base64," + enc
 
 	this.Data["json"] = sendData
 	this.ServeJSON()
