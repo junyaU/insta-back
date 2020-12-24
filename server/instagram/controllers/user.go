@@ -50,7 +50,7 @@ func (this *UserController) GetUser() {
 
 				fileData, _ := ioutil.ReadAll(obj.Body)
 				encData := base64.StdEncoding.EncodeToString(fileData)
-				imgNames <- encData
+				imgNames <- "data:image/jpg;base64," + encData
 			}()
 
 			for n := 0; n < 2; n++ {

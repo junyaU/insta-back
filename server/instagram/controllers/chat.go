@@ -210,7 +210,7 @@ func (this *ChatController) GetChatList() {
 				defer obj.Body.Close()
 				fileData, _ := ioutil.ReadAll(obj.Body)
 				encData := base64.StdEncoding.EncodeToString(fileData)
-				toUser.Imageprofile.Image = encData
+				toUser.Imageprofile.Image = "data:image/jpg;base64," + encData
 			}
 
 			o.QueryTable(new(models.Chat)).Filter("from_id", user.Id).Filter("to_id", toId).OrderBy("-Created").One(&latestArr)
